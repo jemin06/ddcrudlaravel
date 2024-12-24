@@ -3,30 +3,20 @@
 namespace App\Http\Controllers;
 
 use Illuminate\Http\Request;
+use App\Models\Product;
 use App\Models\Category;
-class categoryController extends Controller
+class ProductController extends Controller
 {
     /**
      * Display a listing of the resource.
      *
      * @return \Illuminate\Http\Response
      */
-
-     public function index()
-     {
-         $categories = Category::all();
-         return view('admin.category.index', compact('categories'));
-     }
-
-
-    // public function index(Request $request)
-    // {
-
-    //     $sortBy = $request->get('sort_by', 'price');
-    //     $sortOrder = $request->get('sort_order', 'asc');
-    //     $category = Category::orderBy($sortBy, $sortOrder)->get();
-    //     return view('admin.category.index')->with(compact('category', 'sortBy', 'sortOrder'));
-    // }
+    public function index()
+    {
+        $products = Product::with('category')->get();
+        return view('admin.product.index', compact('products'));
+    }
 
     /**
      * Show the form for creating a new resource.
@@ -35,7 +25,8 @@ class categoryController extends Controller
      */
     public function create()
     {
-        return view ('admin.category.create');
+        $categories = Category::all();
+        return view('admin.product.create', compact('categories'));
     }
 
     /**
@@ -47,24 +38,28 @@ class categoryController extends Controller
     public function store(Request $request)
     {
         $request->validate([
-            'name' => 'required|string|max:255',
+            'category_id' => 'required|string|max:255',
+            'name' => 'required|string',
             'price' => 'required|numeric|min:0',
-            'description' => 'required|string',
-            'tag' => 'required|string|max:255',
+            'status' => 'required|numeric|min:0',
             'image' => 'required|image|mimes:jpeg,png,jpg,gif|max:2048',
+            'description' => 'required|string',
+            'tag' => 'required|string',
         ]);
+        $imagePath = $request->file('image') ? $request->file('image')->store('product', 'public') : null;
 
-        $imagePath = $request->file('image') ? $request->file('image')->store('categories', 'public') : null;
-
-        Category::create([
+        Product::create([
+            'category_id' => $request->category_id,
             'name' => $request->name,
             'price' => $request->price,
+            'status' => $request->status,
+            'image' => $imagePath,
             'description' => $request->description,
             'tag' => $request->tag,
-            'image' => $imagePath,
+
         ]);
 
-        return redirect()->route('admin.categories.index')->with('success', 'Category created successfully.');
+        return redirect()->route('admin.product.index')->with('success', 'Product created successfully.');
     }
 
     /**
@@ -86,8 +81,9 @@ class categoryController extends Controller
      */
     public function edit($id)
     {
-        $category = Category::findOrFail($id);
-        return view('admin.category.edit', compact('category'));
+        $products = Product::findOrFail($id);
+        $categories = Category::all();
+        return view('admin.product.edit', compact('products' , 'categories'));
     }
 
     /**
@@ -100,23 +96,27 @@ class categoryController extends Controller
     public function update(Request $request, $id)
     {
         $request->validate([
-           'name' => 'required|string|max:255',
+            'category_id' => 'required|string|max:255',
+            'name' => 'required|string',
             'price' => 'required|numeric|min:0',
-            'description' => 'required|string',
-            'tag' => 'required|string|max:255',
+            'status' => 'required|numeric|min:0',
             'image' => 'required|image|mimes:jpeg,png,jpg,gif|max:2048',
-        ]);
-        $category = Category::findOrFail($id);
-        $imagePath = $request->file('image') ? $request->file('image')->store('categories', 'public') : null;
+            'description' => 'required|string',
+            'tag' => 'required|string',
+         ]);
+         $Product = Product::findOrFail($id);
+         $imagePath = $request->file('image') ? $request->file('image')->store('product', 'public') : null;
 
-        $category->update([
+         $Product->update([
+            'category_id' => $request->category_id,
             'name' => $request->name,
             'price' => $request->price,
+            'status' => $request->status,
+            'image' => $imagePath,
             'description' => $request->description,
             'tag' => $request->tag,
-            'image' => $imagePath,
-        ]);
-        return redirect()->route('admin.categories.index')->with('success', 'Category updated successfully.');
+         ]);
+         return redirect()->route('admin.product.index')->with('success', 'Product updated successfully.');
     }
 
     /**
@@ -127,8 +127,8 @@ class categoryController extends Controller
      */
     public function destroy($id)
     {
-        $category = Category::findOrFail($id);
-        $category->delete();
-        return redirect()->route('admin.categories.index')->with('success', 'Category deleted successfully.');
+        $Product = Product::findOrFail($id);
+        $Product->delete;
+        return redirect()->route('admin.product.index')->with('success', 'Product Deleted successfully.');
     }
 }
